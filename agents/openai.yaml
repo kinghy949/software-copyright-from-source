@@ -1,0 +1,4 @@
+interface:
+  display_name: "源码软著材料生成"
+  short_description: "从源码与真实截图生成软著三件套PDF"
+  default_prompt: "Use $software-copyright-from-source to generate software copyright application, operation manual, and code document PDFs from source code and real screenshots."
