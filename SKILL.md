@@ -46,6 +46,27 @@ Use the real project source and real screenshots supplied by the user. Do not su
 - If the user provides a reference application form, match its structure and table style while adapting the content to the current software.
 - Preserve user-requested naming and output directories.
 
+## Application Form Rules
+
+Keep the generated application form compatible with current online-entry constraints:
+
+- Development hardware, runtime hardware, development OS, development tools, runtime platform, support software, development purpose, and target domain: 50 Chinese characters or fewer.
+- Programming language: 120 characters or fewer.
+- Main functions: 500-1300 characters.
+- Technical characteristics: 100 characters or fewer.
+- Source line count must be based on the actual source tree, excluding generated output, dependencies, build artifacts, screenshots, PDFs, and unrelated archives.
+
+Use `application_profile` in the config to override these fields per project. Do not pad fields with irrelevant text; keep them concrete and consistent with the operation manual.
+
+## Manual And Code Alignment
+
+- Manual chapters should be pure user operation instructions: what the screen shows, what the user clicks or enters, and what result appears.
+- Manual screenshots should appear near the section that describes them. If a figure floats into the wrong section, set `screenshots[].page_break_before` for the affected screenshot and regenerate.
+- Code sections should prioritize source files that implement the same features shown in the manual screenshots.
+- Keep code documents in the usual submission range of 60-80 pages unless the user asks otherwise. Prefer high-relevance excerpts over whole-project dumps.
+- When reducing an oversized code document, remove low-relevance utilities, generated files, framework boilerplate, and duplicate styles first.
+- When expanding an undersized code document, add closely related controllers, API clients, stores, route definitions, service logic, and component code that supports the same manual chapters.
+
 ## Scripted Generation
 
 Use `scripts/generate_copyright_docs.py` for deterministic generation once the project map is known.
@@ -62,6 +83,47 @@ python3 ~/.codex/skills/software-copyright-from-source/scripts/generate_copyrigh
 
 The script writes intermediates to `manual_build/`, renders previews to `manual_build/preview/`, and copies final PDFs to `out/`.
 
+Useful regeneration modes:
+
+```bash
+# Regenerate only the application form and validate field lengths.
+python3 ~/.codex/skills/software-copyright-from-source/scripts/generate_copyright_docs.py \
+  --root /path/to/copyright-workdir \
+  --config /path/to/copyright-workdir/copyright_config.json \
+  --only application
+
+# Regenerate only the operation manual after screenshot or layout fixes.
+python3 ~/.codex/skills/software-copyright-from-source/scripts/generate_copyright_docs.py \
+  --root /path/to/copyright-workdir \
+  --source-root /path/to/project-source \
+  --screenshots-dir /path/to/copyright-workdir/截图 \
+  --config /path/to/copyright-workdir/copyright_config.json \
+  --only manual
+
+# Regenerate only the code document and enforce the target page range.
+python3 ~/.codex/skills/software-copyright-from-source/scripts/generate_copyright_docs.py \
+  --root /path/to/copyright-workdir \
+  --source-root /path/to/project-source \
+  --config /path/to/copyright-workdir/copyright_config.json \
+  --only code \
+  --code-page-min 60 \
+  --code-page-max 80
+```
+
+When only one PDF is regenerated, check that the existing `out/` folder still contains the other two final PDFs before packaging delivery materials.
+
+## Delivery Packaging
+
+For multiple software copyright projects under one root, collect only the final application materials into a clean delivery folder:
+
+```bash
+python3 ~/.codex/skills/software-copyright-from-source/scripts/collect_delivery.py \
+  --root /path/to/软著 \
+  --delivery-dir /path/to/软著/交付材料
+```
+
+The collector expects each project to contain exactly one `out/*_申请表.pdf`, one `out/*_操作手册.pdf`, and one `out/*_代码文档.pdf`. It creates one subfolder per software name, removes `.DS_Store`, and fails if non-PDF files remain in the delivery folder.
+
 ## Config
 
 Create a JSON config in the target project. See `references/config-schema.md` for the supported shape.
@@ -72,6 +134,8 @@ Important fields:
 - `output_basename`: final Chinese filename stem.
 - `version`, `completed_date`, `writing_date`.
 - `source_line_total`: source-program total shown in the application form.
+- `application_profile`: field-limited application-form text.
+- `manual_profile`: overview, runtime environment, and common-issues text.
 - `screenshots`: ordered screenshot metadata, descriptions, and operation steps.
 - `code_sections`: ordered source excerpts that correspond to the manual chapters.
 

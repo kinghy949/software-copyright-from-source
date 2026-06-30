@@ -26,6 +26,55 @@ COMPLETED_DATE = "2026 年 05 月 18 日"
 WRITING_DATE = "2026 年 06 月 29 日"
 OUTPUT_BASENAME = "Botlink智能机器人即时通讯平台"
 SOURCE_LINE_TOTAL = "5129"
+APPLICATION_PROFILE = {
+    "software_category": "应用软件",
+    "software_description": "原创",
+    "development_mode": "单独开发",
+    "publication_status": "未发表",
+    "development_hardware": "MacBook Pro、x86_64 或 ARM64 标准开发机，16GB RAM 以上",
+    "runtime_hardware": "x86_64 云服务器或企业内网服务器，8GB RAM 以上",
+    "development_os": "macOS、Windows 11、Linux",
+    "development_tools": "VS Code、pnpm、Vite、TypeScript、Git、Docker",
+    "runtime_platform": "Linux、Docker、Nginx、Node.js 服务端、Web 浏览器",
+    "support_software": "Vue、Hono、PostgreSQL、Redis、WebSocket、Docker",
+    "programming_languages": "TypeScript、Vue、SQL、CSS",
+    "development_purpose": "提升企业智能体会话协同和消息处理效率",
+    "target_domain": "企业智能办公、人机协同和智能体运营领域",
+    "main_feature": (
+        "本软件面向企业智能办公和人机协同沟通场景，围绕用户、智能体和本地 Agent Bridge 的消息协作构建即时通讯入口。"
+        "用户可通过手机号验证码完成登录，首次登录自动创建账号并进入聊天工作台。智能体管理模块展示用户名下的智能体列表，"
+        "呈现在线状态、最后回复时间和最后心跳信息，并提供发送消息、编辑和删除入口；创建智能体时可填写名称、描述和访问模式，"
+        "提交后生成智能体记录和接入凭据。会话模块支持私聊、项目会话和多智能体协作会话，用户可在智能体或用户页签中选择参与者并创建会话。"
+        "消息工作台展示会话列表、聊天对象、消息输入框、附件和表情入口，通过 WebSocket 实现实时投递，并提供搜索和定时任务入口。"
+        "问题反馈模块支持填写问题、上传或粘贴截图并提交，便于运营人员跟踪处理。新手指南以侧栏形式展示登录、智能体创建、本地桥接配置、"
+        "工作目录和移动端安装步骤，帮助新用户完成平台初始化和日常协同。系统能够统一管理智能体接入、会话成员、消息记录和反馈材料，"
+        "使用户与智能体之间的协作过程可见、可追踪、可持续运营。同时，平台通过统一入口、状态记录、筛选查询和权限控制，帮助管理人员"
+        "掌握业务流转情况，减少线下沟通和重复维护成本，形成从智能体接入、会话发起、消息处理到问题反馈的闭环管理能力。"
+    ),
+    "technical_feature": "采用Vue前端、Hono微服务、WebSocket网关、PostgreSQL和Redis，实现实时消息、会话协同和反馈处理。",
+}
+MANUAL_PROFILE = {
+    "overview": (
+        "BotLink Platform 用于连接用户、智能体和本地 Agent Bridge，提供基于会话的智能协同沟通能力。"
+        "本手册按照实际截图顺序描述登录、智能体管理、创建智能体、新建会话、消息收发、问题反馈和新手指南功能。"
+        "用户可按照章节步骤完成账号登录、智能体配置、会话创建和日常消息协同。"
+    ),
+    "runtime_environment": "用户通过浏览器访问 Web 客户端；服务端由 user、bot、conversation、message、operation 等微服务提供接口；网关负责 WebSocket 连接和实时消息投递。",
+    "common_issues": "登录失败时检查手机号格式、验证码有效期和网络状态；智能体不在线时检查接入端 token、心跳和网关连接；消息未送达时查看会话参与者、WebSocket 状态和消息服务日志；反馈提交失败时检查截图数量、文件大小和用户登录状态。",
+}
+APPLICATION_LIMITS = {
+    "development_hardware": (0, 50, "开发硬件环境"),
+    "runtime_hardware": (0, 50, "运行硬件环境"),
+    "development_os": (0, 50, "开发操作系统"),
+    "development_tools": (0, 50, "开发工具"),
+    "runtime_platform": (0, 50, "运行平台"),
+    "support_software": (0, 50, "支撑软件"),
+    "programming_languages": (0, 120, "编程语言"),
+    "development_purpose": (0, 50, "开发目的"),
+    "target_domain": (0, 50, "面向领域"),
+    "main_feature": (500, 1300, "主要功能"),
+    "technical_feature": (0, 100, "技术特点"),
+}
 
 
 SCREENSHOTS = [
@@ -200,18 +249,35 @@ def rel_source(path: str) -> Path:
     return SOURCE_ROOT / path
 
 
-def check_inputs() -> None:
+def check_inputs(only: set[str]) -> None:
     missing = []
-    for shot in SCREENSHOTS:
-        path = SHOT_DIR / shot["file"]
-        if not path.exists():
-            missing.append(str(path))
-    for section in CODE_SECTIONS:
-        for path, _ in section["blocks"]:
-            if not rel_source(path).exists():
-                missing.append(str(rel_source(path)))
+    invalid_ranges = []
+    if "manual" in only:
+        for shot in SCREENSHOTS:
+            path = SHOT_DIR / shot["file"]
+            if not path.exists():
+                missing.append(str(path))
+    if "code" in only:
+        for section in CODE_SECTIONS:
+            for path, _ in section["blocks"]:
+                source_path = rel_source(path)
+                if not source_path.exists():
+                    missing.append(str(source_path))
+        for section in CODE_SECTIONS:
+            for path, line_range in section["blocks"]:
+                if not line_range:
+                    continue
+                source_path = rel_source(path)
+                if not source_path.exists():
+                    continue
+                line_count = len(source_path.read_text(encoding="utf-8", errors="ignore").splitlines())
+                start, end = line_range
+                if start < 1 or end < start or end > line_count:
+                    invalid_ranges.append(f"{path}: requested {start}-{end}, file has {line_count} lines")
     if missing:
         raise FileNotFoundError("缺少输入文件:\n" + "\n".join(missing))
+    if invalid_ranges:
+        raise ValueError("代码摘录行号越界:\n" + "\n".join(invalid_ranges))
 
 
 def clean_build() -> None:
@@ -284,12 +350,14 @@ header-includes:
   - \\setCJKmainfont{{Songti SC}}
   - \\usepackage{{fancyhdr}}
   - \\usepackage{{graphicx}}
+  - \\usepackage{{float}}
   - \\usepackage{{longtable}}
   - \\usepackage{{booktabs}}
   - \\usepackage{{array}}
   - \\usepackage{{listings}}
   - \\lstset{{breaklines=true,breakatwhitespace=false,basicstyle=\\ttfamily\\scriptsize,columns=fullflexible,keepspaces=true,showstringspaces=false,frame=single}}
   - \\renewcommand{{\\figurename}}{{图}}
+  - \\floatplacement{{figure}}{{H}}
   - \\pagestyle{{fancy}}
   - \\fancyhf{{}}
   - \\fancyhead[L]{{{header_text}}}
@@ -373,6 +441,17 @@ def bordered_table(rows: list[tuple[str, str]], col1: str = "3.2cm", col2: str =
     return "".join(lines)
 
 
+def validate_application_profile() -> None:
+    errors = []
+    for key, (min_len, max_len, label) in APPLICATION_LIMITS.items():
+        value = str(APPLICATION_PROFILE.get(key, ""))
+        length = len(value)
+        if length < min_len or length > max_len:
+            errors.append(f"{label}({key}) 长度 {length}，要求 {min_len}-{max_len} 字")
+    if errors:
+        raise ValueError("申请表字段不符合当前填报规则:\n" + "\n".join(errors))
+
+
 def toc_page() -> str:
     return """\\thispagestyle{empty}
 \\renewcommand{\\contentsname}{目录}
@@ -397,47 +476,32 @@ def make_application() -> str:
     content.append(bordered_table(basic_rows))
 
     property_rows = [
-        ("软件分类", "应用软件"),
-        ("软件说明", "原创"),
-        ("开发方式", "单独开发"),
+        ("软件分类", APPLICATION_PROFILE["software_category"]),
+        ("软件说明", APPLICATION_PROFILE["software_description"]),
+        ("开发方式", APPLICATION_PROFILE["development_mode"]),
         ("开发完成日期", COMPLETED_DATE),
-        ("发表状态", "未发表"),
+        ("发表状态", APPLICATION_PROFILE["publication_status"]),
     ]
     content.append(section_title("软件属性"))
     content.append(bordered_table(property_rows))
 
     tech_rows = [
-        ("开发硬件环境", "MacBook Pro, x86_64 与 ARM64 标准开发机, 16GB RAM 以上"),
-        ("运行硬件环境", "x86_64 云服务器或企业内网服务器, 8GB RAM 以上"),
-        ("开发操作系统", "macOS, Windows 11, Linux"),
-        ("开发工具", "Visual Studio Code, pnpm, Vite, TypeScript, Git, Docker"),
-        ("运行平台", "Linux, Docker, Nginx, Node.js 服务端, Web 浏览器"),
-        ("支撑软件", "Node.js 22, Hono, Vue 3, PostgreSQL, Redis, WebSocket, Docker"),
-        ("编程语言", "TypeScript, Vue, SQL, CSS"),
+        ("开发硬件环境", APPLICATION_PROFILE["development_hardware"]),
+        ("运行硬件环境", APPLICATION_PROFILE["runtime_hardware"]),
+        ("开发操作系统", APPLICATION_PROFILE["development_os"]),
+        ("开发工具", APPLICATION_PROFILE["development_tools"]),
+        ("运行平台", APPLICATION_PROFILE["runtime_platform"]),
+        ("支撑软件", APPLICATION_PROFILE["support_software"]),
+        ("编程语言", APPLICATION_PROFILE["programming_languages"]),
         ("源程序总行数", SOURCE_LINE_TOTAL),
-        ("开发目的", "提升企业内部人机协同沟通效率，降低智能体接入门槛，规范消息流转、会话协作和问题反馈处理流程。"),
-        ("面向领域", "面向企业智能办公和人机协同领域，主要服务于企业员工、智能体运营人员和本地 Agent Bridge 维护人员。"),
+        ("开发目的", APPLICATION_PROFILE["development_purpose"]),
+        ("面向领域", APPLICATION_PROFILE["target_domain"]),
     ]
     content.append(section_title("技术与功能"))
     content.append(bordered_table(tech_rows))
 
-    main_feature = (
-        "本软件面向企业智能办公和人机协同沟通场景，围绕用户、智能体和本地 Agent Bridge 的消息协作构建一站式即时通讯入口，"
-        "在功能层面包含手机号验证码登录、智能体管理、智能体创建、会话协同、消息收发工作台、问题反馈和新手指南七大核心模块，"
-        "形成从账号认证、智能体接入、会话创建、实时消息投递、问题反馈到使用指导的完整业务链路。手机号验证码登录模块支持用户通过"
-        "手机号和短信验证码完成身份校验，首次登录时自动创建账号并进入聊天工作台，降低注册和启用成本。智能体管理模块展示用户名下"
-        "智能体列表，呈现在线状态、最后回复时间和最后心跳信息，并提供发送消息、编辑和删除等操作入口，便于用户快速掌握智能体运行"
-        "状态。智能体创建模块通过弹窗收集智能体名称、描述和访问模式，提交后生成智能体记录和接入凭据，为后续本地 Agent Bridge 或"
-        "第三方智能体接入提供基础配置。会话协同模块支持私聊、项目会话和多智能体协作会话，用户可在智能体与用户页签中选择参与者，"
-        "完成面向不同协作场景的会话创建。消息收发工作台模块提供会话列表、聊天对象、消息输入框、附件和表情入口，并结合 WebSocket "
-        "网关实现实时消息投递，同时提供消息搜索和定时任务入口，满足日常沟通、智能体调用和任务提醒需求。问题反馈模块允许用户填写"
-        "问题描述、上传或粘贴截图并提交，运营服务保存反馈记录和附件，便于后台人员跟踪处理。新手指南模块通过右侧抽屉展示登录、"
-        "智能体创建、agent-bridge 配置、Codex 工作目录和移动端安装步骤，帮助新用户按步骤完成平台初始化和本地桥接配置。"
-    )
-    tech_feature = (
-        "采用 Vue 3 + TypeScript 前端、Hono 微服务和 WebSocket 网关架构，结合 PostgreSQL 持久化、Redis 连接状态管理与 Docker "
-        "部署方式，实现多服务解耦、实时通信、状态可追踪和跨端接入能力。"
-    )
+    main_feature = APPLICATION_PROFILE["main_feature"]
+    tech_feature = APPLICATION_PROFILE["technical_feature"]
     content.append("\\newpage\n")
     content.append(bordered_table([
         ("主要功能", main_feature),
@@ -451,16 +515,14 @@ def make_manual() -> str:
     content.append(cover_page("操作手册"))
     content.append(toc_page())
     content.append("## 1 软件概述\n")
-    content.append(
-        "BotLink Platform 用于连接用户、智能体和本地 Agent Bridge，提供基于会话的智能协同沟通能力。"
-        "本手册按照实际截图顺序描述登录、智能体管理、创建智能体、新建会话、消息收发、问题反馈和新手指南功能。"
-        "用户可按照章节步骤完成账号登录、智能体配置、会话创建和日常消息协同。\n\n"
-    )
+    content.append(f"{MANUAL_PROFILE['overview']}\n\n")
     content.append("## 2 运行环境\n")
-    content.append("用户通过浏览器访问 Web 客户端；服务端由 user、bot、conversation、message、operation 等微服务提供接口；网关负责 WebSocket 连接和实时消息投递。\n\n")
+    content.append(f"{MANUAL_PROFILE['runtime_environment']}\n\n")
     content.append("## 3 功能操作说明\n")
     fig_no = 1
     for idx, shot in enumerate(SCREENSHOTS, 1):
+        if shot.get("page_break_before"):
+            content.append("\\newpage\n\n")
         content.append(f"### 3.{idx} {shot['module']}\n")
         content.append(f"{shot['desc']}\n\n")
         content.append("操作步骤：\n\n")
@@ -471,7 +533,7 @@ def make_manual() -> str:
         fig_no += 1
         content.append("\n")
     content.append("## 4 常见问题处理\n")
-    content.append("登录失败时检查手机号格式、验证码有效期和网络状态；智能体不在线时检查接入端 token、心跳和网关连接；消息未送达时查看会话参与者、WebSocket 状态和消息服务日志；反馈提交失败时检查截图数量、文件大小和用户登录状态。\n")
+    content.append(f"{MANUAL_PROFILE['common_issues']}\n")
     return "".join(content)
 
 
@@ -491,16 +553,18 @@ def make_code_doc() -> str:
     return "".join(content)
 
 
-def write_markdown() -> dict[str, Path]:
+def write_markdown(only: set[str]) -> dict[str, Path]:
     docs = {
-        "application": (f"{SOFTWARE_NAME}_{VERSION}_申请表.md", make_application()),
-        "manual": (f"{SOFTWARE_NAME}_{VERSION}_操作手册.md", make_manual()),
-        "code": (f"{SOFTWARE_NAME}_{VERSION}_代码文档.md", make_code_doc()),
+        "application": (f"{SOFTWARE_NAME}_{VERSION}_申请表.md", make_application),
+        "manual": (f"{SOFTWARE_NAME}_{VERSION}_操作手册.md", make_manual),
+        "code": (f"{SOFTWARE_NAME}_{VERSION}_代码文档.md", make_code_doc),
     }
     result = {}
-    for key, (name, content) in docs.items():
+    for key, (name, make_content) in docs.items():
+        if key not in only:
+            continue
         path = MD_DIR / name
-        path.write_text(content, encoding="utf-8")
+        path.write_text(make_content(), encoding="utf-8")
         result[key] = path
     return result
 
@@ -534,11 +598,29 @@ def copy_to_out(pdf_paths: dict[str, Path]) -> dict[str, Path]:
         "code": f"{OUTPUT_BASENAME}_代码文档.pdf",
     }
     out_paths = {}
-    for key, name in names.items():
+    for key in pdf_paths:
+        name = names[key]
         out_path = OUT_DIR / name
         shutil.copy2(pdf_paths[key], out_path)
         out_paths[key] = out_path
     return out_paths
+
+
+def pdf_pages(path: Path) -> int:
+    result = subprocess.run(["pdfinfo", str(path)], check=True, capture_output=True, text=True)
+    match = re.search(r"^Pages:\s+(\d+)$", result.stdout, flags=re.MULTILINE)
+    if not match:
+        raise RuntimeError(f"无法读取 PDF 页数: {path}")
+    return int(match.group(1))
+
+
+def validate_rendered_pdfs(pdf_paths: dict[str, Path], args: argparse.Namespace) -> None:
+    if "code" in pdf_paths and (args.code_page_min or args.code_page_max):
+        pages = pdf_pages(pdf_paths["code"])
+        if args.code_page_min and pages < args.code_page_min:
+            raise ValueError(f"代码文档页数 {pages} 小于下限 {args.code_page_min}")
+        if args.code_page_max and pages > args.code_page_max:
+            raise ValueError(f"代码文档页数 {pages} 大于上限 {args.code_page_max}")
 
 
 def preview_pdfs(pdf_paths: dict[str, Path]) -> None:
@@ -548,6 +630,8 @@ def preview_pdfs(pdf_paths: dict[str, Path]) -> None:
         "code": (1, 6),
     }
     for key, (first, last) in preview_targets.items():
+        if key not in pdf_paths:
+            continue
         out_prefix = PREVIEW_DIR / key / "page"
         out_prefix.parent.mkdir(parents=True, exist_ok=True)
         run([
@@ -587,6 +671,7 @@ def normalize_code_sections(items: list[dict]) -> list[dict]:
 def apply_config(config: dict) -> None:
     global SOFTWARE_NAME, SOFTWARE_SHORT, VERSION, COMPLETED_DATE, WRITING_DATE
     global OUTPUT_BASENAME, SOURCE_LINE_TOTAL, SCREENSHOTS, CODE_SECTIONS
+    global APPLICATION_PROFILE, MANUAL_PROFILE
 
     SOFTWARE_NAME = config.get("software_name", SOFTWARE_NAME)
     SOFTWARE_SHORT = config.get("software_short", SOFTWARE_SHORT)
@@ -595,6 +680,10 @@ def apply_config(config: dict) -> None:
     WRITING_DATE = config.get("writing_date", WRITING_DATE)
     OUTPUT_BASENAME = config.get("output_basename", OUTPUT_BASENAME)
     SOURCE_LINE_TOTAL = str(config.get("source_line_total", SOURCE_LINE_TOTAL))
+    if "application_profile" in config:
+        APPLICATION_PROFILE = {**APPLICATION_PROFILE, **config["application_profile"]}
+    if "manual_profile" in config:
+        MANUAL_PROFILE = {**MANUAL_PROFILE, **config["manual_profile"]}
     if "screenshots" in config:
         SCREENSHOTS = config["screenshots"]
     if "code_sections" in config:
@@ -611,7 +700,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--build-dir", type=Path, default=None, help="Intermediate build directory.")
     parser.add_argument("--out-dir", type=Path, default=None, help="Final PDF output directory.")
     parser.add_argument("--config", type=Path, default=None, help="JSON config for software metadata, screenshot map, and source sections.")
+    parser.add_argument("--only", choices=["all", "application", "manual", "code"], default="all", help="Generate all documents or a single document type.")
     parser.add_argument("--skip-preview", action="store_true", help="Do not render PDF preview PNGs.")
+    parser.add_argument("--skip-application-validation", action="store_true", help="Skip application-form field length validation.")
+    parser.add_argument("--code-page-min", type=int, default=None, help="Fail if generated code document has fewer pages.")
+    parser.add_argument("--code-page-max", type=int, default=None, help="Fail if generated code document has more pages.")
     return parser.parse_args()
 
 
@@ -632,11 +725,16 @@ def main() -> None:
     configure_paths(args)
     if args.config:
         apply_config(json.loads(args.config.read_text(encoding="utf-8")))
-    check_inputs()
+    only = {"application", "manual", "code"} if args.only == "all" else {args.only}
+    if "application" in only and not args.skip_application_validation:
+        validate_application_profile()
+    check_inputs(only)
     clean_build()
-    copy_assets()
-    md_paths = write_markdown()
+    if "manual" in only:
+        copy_assets()
+    md_paths = write_markdown(only)
     pdf_paths = render_pdf(md_paths)
+    validate_rendered_pdfs(pdf_paths, args)
     if not args.skip_preview:
         preview_pdfs(pdf_paths)
     out_paths = copy_to_out(pdf_paths)
